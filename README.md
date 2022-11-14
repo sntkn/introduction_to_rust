@@ -34,4 +34,9 @@ cargo fmt
 
 # code check
 cargo clippy
+
+# cargo make
+cargo install cargo-make #install
+cargo make [command] # execute
+
 ```
