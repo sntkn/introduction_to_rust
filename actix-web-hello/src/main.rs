@@ -14,7 +14,7 @@ struct HelloResponse {
 
 #[actix_web::get("/")]
 async fn hello(query: web::Query<HelloQuery>) -> HttpResponse {
-    let query = query.into_inner();
+    let query = query.into_inner(); // queryを変換
     let message = format!(
         "Hello, my name is {}! Iam {} years old",
         query.name, query.age,
@@ -29,7 +29,7 @@ async fn hello(query: web::Query<HelloQuery>) -> HttpResponse {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| App::new().service(hello))
-        .bind(("0.0.0.0", 8080))?
+        .bind(("0.0.0.0", 8080))? // 糖衣構文
         .run()
         .await
 }
