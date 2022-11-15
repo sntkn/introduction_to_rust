@@ -40,3 +40,14 @@ cargo install cargo-make #install
 cargo make [command] # execute
 
 ```
+
+## database
+
+```bash
+cargo install diesel_cli --no-default-features --features sqlite-bundled
+diesel setup
+
+# migration
+diesel migration generate create_posts
+diesel migration run # migrate
+```
