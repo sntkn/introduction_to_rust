@@ -4,7 +4,7 @@ use actix_web::web;
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
 use diesel::sqlite::SqliteConnection;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer};
 
 type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 
@@ -12,7 +12,21 @@ type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 #[diesel(table_name = posts)]
 pub struct NewPost {
     title: String,
+    #[serde(deserialize_with = "max200")]
     body: String,
+}
+
+// serde のデシリアライズ時に検証するパターン
+fn max200<'de, D>(de: D) -> Result<String, D::Error> where D: Deserializer<'de> {
+    String::deserialize(de).and_then(|s| {
+        if !s.is_empty() && s.len() < 200 {
+            Ok(s)
+        } else {
+            Err(serde::de::Error::custom(
+                "string length is 0 or too long",
+            ))
+        }
+    })
 }
 
 #[derive(Serialize, Queryable)]
@@ -25,6 +39,12 @@ pub struct Post {
 
 pub struct Repository {
     pool: DbPool,
+}
+
+impl NewPost {
+    pub fn validate(&self) -> bool {
+        self.title.len() > 0 && self.title.len() <= 100
+    }
 }
 
 impl Repository {
