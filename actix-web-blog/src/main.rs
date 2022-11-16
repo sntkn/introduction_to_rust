@@ -2,8 +2,8 @@ mod error;
 mod repository;
 mod schema;
 
-use actix_web::{web, App, HttpResponse, HttpServer};
 use actix_web::middleware::{Logger, NormalizePath};
+use actix_web::{web, App, HttpResponse, HttpServer};
 use error::ApiError;
 use repository::{NewPost, Repository};
 
@@ -15,18 +15,14 @@ async fn create_post(
     let new_post = new_post.into_inner();
     // validate メソッドを実装して検証するパターン
     if !new_post.validate() {
-        return Ok(HttpResponse::BadRequest().body(
-            "length of title is invalid.",
-        ));
+        return Ok(HttpResponse::BadRequest().body("length of title is invalid."));
     }
     let post = repo.create_post(new_post).await?;
     Ok(HttpResponse::Ok().json(post))
 }
 
 #[actix_web::get("/posts")]
-async fn list_posts(
-    repo: web::Data<Repository>,
-) -> Result<HttpResponse, ApiError> {
+async fn list_posts(repo: web::Data<Repository>) -> Result<HttpResponse, ApiError> {
     let posts = repo.list_posts().await?;
     Ok(HttpResponse::Ok().json(posts))
 }
@@ -46,16 +42,16 @@ async fn main() -> std::io::Result<()> {
     tracing_subscriber::fmt().init();
     let database_url = std::env::var("DATABASE_URL").unwrap();
     let repo = web::Data::new(Repository::new(&database_url));
-    HttpServer::new(move ||
-            App::new()
+    HttpServer::new(move || {
+        App::new()
             .app_data(repo.clone())
             .wrap(Logger::default())
             .wrap(NormalizePath::trim())
             .service(create_post)
             .service(list_posts)
             .service(get_post)
-        )
-        .bind(("0.0.0.0", 8080))?
-        .run()
-        .await
+    })
+    .bind(("0.0.0.0", 8080))?
+    .run()
+    .await
 }

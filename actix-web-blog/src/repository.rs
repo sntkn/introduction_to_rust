@@ -4,7 +4,7 @@ use actix_web::web;
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
 use diesel::sqlite::SqliteConnection;
-use serde::{Deserialize, Serialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 
 type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 
@@ -17,14 +17,15 @@ pub struct NewPost {
 }
 
 // serde のデシリアライズ時に検証するパターン
-fn max200<'de, D>(de: D) -> Result<String, D::Error> where D: Deserializer<'de> {
+fn max200<'de, D>(de: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
     String::deserialize(de).and_then(|s| {
         if !s.is_empty() && s.len() < 200 {
             Ok(s)
         } else {
-            Err(serde::de::Error::custom(
-                "string length is 0 or too long",
-            ))
+            Err(serde::de::Error::custom("string length is 0 or too long"))
         }
     })
 }
@@ -71,27 +72,16 @@ impl Repository {
 
     pub async fn list_posts(&self) -> Result<Vec<Post>, ApiError> {
         let mut conn = self.pool.get()?;
-        let res = web::block(move || {
-            posts::table.load(&mut conn)
-        })
-        .await??;
+        let res = web::block(move || posts::table.load(&mut conn)).await??;
 
         Ok(res)
     }
 
-    pub async fn get_post(
-        &self,
-        id:i32,
-    ) -> Result<Post, ApiError> {
+    pub async fn get_post(&self, id: i32) -> Result<Post, ApiError> {
         let mut conn = self.pool.get()?;
-        let res = web::block(move || {
-            posts::table
-                .find(id)
-                .first(&mut conn)
-                .optional()
-        })
-        .await??
-        .ok_or(ApiError::NotFound)?;
+        let res = web::block(move || posts::table.find(id).first(&mut conn).optional())
+            .await??
+            .ok_or(ApiError::NotFound)?;
 
         Ok(res)
     }
