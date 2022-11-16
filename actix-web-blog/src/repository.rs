@@ -48,6 +48,16 @@ impl Repository {
 
         Ok(post)
     }
+
+    pub async fn list_posts(&self) -> Result<Vec<Post>, ApiError> {
+        let mut conn = self.pool.get()?;
+        let res = web::block(move || {
+            posts::table.load(&mut conn)
+        })
+        .await??;
+
+        Ok(res)
+    }
 }
 
 #[cfg(test)]
