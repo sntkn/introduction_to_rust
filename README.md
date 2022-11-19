@@ -51,3 +51,12 @@ diesel setup
 diesel migration generate create_posts
 diesel migration run # migrate
 ```
+
+## aws
+
+### lambda
+
+```bash
+php3 install cargo-lambda
+cargo lambda new [project name]
+```
