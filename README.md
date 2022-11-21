@@ -60,3 +60,12 @@ diesel migration run # migrate
 php3 install cargo-lambda
 cargo lambda new [project name]
 ```
+
+### Foreign Function interface
+
+```bash
+cargo install maturin
+maturin new [project name] --bindings pyo3
+
+maturin develop
+```
