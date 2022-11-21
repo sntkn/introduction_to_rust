@@ -61,11 +61,23 @@ php3 install cargo-lambda
 cargo lambda new [project name]
 ```
 
-### Foreign Function interface
+## Foreign Function interface
 
 ```bash
 cargo install maturin
 maturin new [project name] --bindings pyo3
 
 maturin develop
+```
+
+## WebAssembly
+
+wasm 向けビルド環境
+
+```bash
+rustup target add wasm32-unknown-unknown
+cargo install trunk
+
+cargo new [project name]
+cargo add yew wasm-bindgen-futures gloo-net
 ```
