@@ -39,6 +39,9 @@ cargo clippy
 cargo install cargo-make #install
 cargo make [command] # execute
 
+# show document on browser
+cargo doc --open
+
 ```
 
 ## database
