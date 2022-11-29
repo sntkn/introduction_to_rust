@@ -84,3 +84,34 @@ cargo install trunk
 cargo new [project name]
 cargo add yew wasm-bindgen-futures gloo-net
 ```
+
+## 基本構文
+
+### 束縛
+
+for も含めて `{}` の中はスコープが違う  
+下記の場合、1 回ごと x がリセットされる
+
+```rust
+    let x = 5;
+    for n in 1..11 {
+        let x = x + 1;
+        println!("{}", x);
+    }
+
+    println!("{}", x);
+```
+
+### Collection
+
+-|型|長|代入
+---|---|---|---
+tuple|複合|固定長|不可
+array|単一|固定長|可(mut)
+vector|単一|可変長|可(mut)
+
+```rust
+let t: (i32, f64, &str) = (100, 1.01, "hundred") // tuple
+let a: [i32; 5] = [1, 2, 3, 4, 5]; // array
+let v: Vec<i32> = vec![1,2,3]; // vector
+```
