@@ -150,3 +150,29 @@ let v: Vec<i32> = vec![1,2,3]; // vector
   } // ここでスコープ抜ける
   let r2 = addworld(&mut s); // r2,s=hello world world
 ```
+
+### struct
+
+```rust
+#[derive(Debug)] // debug
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+// method 記法
+impl Rectangle {
+    fn area(&self) -> u32 {
+        self.width * self.height
+    }
+    fn can_hold(&self, other: &Rectangle) -> bool {
+        self.width > other.width && self.height > other.height
+    }
+}
+
+fn main() {
+    let rect1 = Rectangle { width: 30, height: 50 };
+
+    println!("rect1 is {:?}", rect1); // 構造体を展開
+}
+```
