@@ -176,3 +176,22 @@ fn main() {
     println!("rect1 is {:?}", rect1); // 構造体を展開
 }
 ```
+
+### Generics
+
+```rust
+
+enum Option<T> {
+  Some(T),
+  None,
+}
+// utility fn
+x.is_some(), x.is_none(), x.unwrap()
+
+enum Result<T, E> {
+  Ok(T),
+  Err(E)
+}
+// utility fn
+x.is_ok(), x.is_err(), x.unwrap(),
+```
