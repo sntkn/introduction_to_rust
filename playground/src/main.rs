@@ -30,7 +30,7 @@ fn main() {
     double(&mut arr);
     println!("{:?}", arr);
 
-    println!("{}",f(12i16,13i16));
+    println!("{}", f(12i16, 13i16));
 
     let mut v = vec![11, 22, 33];
     for _ in 0..5 {
@@ -45,8 +45,27 @@ fn main() {
         } else if item.is_none() {
             print!("#-1, ")
         }
-
     }
+    println!("");
+
+    // sort desc
+    let mut arr = [1, 2, 3, 34, 5, 6, 78];
+    arr.sort_by(|a, b| b.cmp(a));
+    // arr.sort_by(|a, b| (&-a).cmp(&-b));
+    println!("{:?}", arr);
+
+    // calling closure
+    let factor = 2;
+    let multiply = |a| a * factor;
+    let multiply_ref = &multiply;
+    println!(
+        "{} {} {} {} {}",
+        (*multiply_ref)(13), // デリファレンス
+        multiply_ref(13), // デリファレンスしない
+        (|a| a * factor)(13), // クロージャ
+        (|a: i32| a * factor)(13), // クロージャ
+        |a| -> i32 { a * factor }(13), // クロージャ
+    );
 }
 
 fn double(a: &mut [i32; 10]) {
