@@ -195,3 +195,20 @@ enum Result<T, E> {
 // utility fn
 x.is_ok(), x.is_err(), x.unwrap(),
 ```
+
+### slice
+
+slice参照を使えばどんな配列でも処理できる
+
+```rust
+// slice reference &[i32]
+fn min(arr: &[i32]) -> i32 {
+  let mut minimum = arr[0];
+  for i in 1..arr.len() {
+    if arr[i] < minimum { minimum = arr[i]; }
+    minimum
+  }
+}
+print!("{}", min(&[23, 17]));
+print!("{}", min(&vec![55, 22, 33, 44]));
+```
