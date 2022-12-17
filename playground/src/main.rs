@@ -69,6 +69,11 @@ fn main() {
 
     print_nth_char("€fg", 1);
     print_codes("€fg");
+    let v = vec![10, 20, 30];
+    for item in v.into_iter() {
+        print!("{} ", item+1);
+    }
+    //print!("{:?}", v);
 }
 
 fn double(a: &mut [i32; 10]) {
@@ -101,11 +106,14 @@ fn print_nth_char(s: &str, mut n: u32) {
 }
 
 fn print_codes(s: &str) {
-    let mut iter = s.chars();
-    loop {
-        match iter.next() {
-            Some(c) => println!("{}: {}", c, c as u32),
-            None => break,
-        }
+    for c in s.chars() {
+        println!("{}: {}", c, c as u32);
     }
+    // let mut iter = s.chars();
+    // loop {
+    //     match iter.next() {
+    //         Some(c) => println!("{}: {}", c, c as u32),
+    //         None => break,
+    //     }
+    // }
 }

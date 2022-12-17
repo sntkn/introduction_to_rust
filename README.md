@@ -212,3 +212,27 @@ fn min(arr: &[i32]) -> i32 {
 print!("{}", min(&[23, 17]));
 print!("{}", min(&vec![55, 22, 33, 44]));
 ```
+
+### iterator
+
+```rust
+
+ v.into_iter() // iterator (v が破棄される)
+ for i in vec![10, 20, 30] // into_iter と同じ
+ v.iter() // reference iterator（参照なので破棄されない）
+ for i in &vec![10, 20, 30] // iter と同じ
+ v.iter_mut() // mutating iterator
+ for i in &mut vec![10, 20, 30] // iter_mut と同じ
+```
+
+#### iterator generator
+
+- filter
+- map
+- enumerate -> `for (i, ch) in arr.into_iter().enumerate()`
+- any
+- all
+- count
+- sum
+- min/max
+- collect -> `arr.into_iter().collect::<Vec<i32>>();`
