@@ -60,12 +60,15 @@ fn main() {
     let multiply_ref = &multiply;
     println!(
         "{} {} {} {} {}",
-        (*multiply_ref)(13), // デリファレンス
-        multiply_ref(13), // デリファレンスしない
-        (|a| a * factor)(13), // クロージャ
-        (|a: i32| a * factor)(13), // クロージャ
+        (*multiply_ref)(13),           // デリファレンス
+        multiply_ref(13),              // デリファレンスしない
+        (|a| a * factor)(13),          // クロージャ
+        (|a: i32| a * factor)(13),     // クロージャ
         |a| -> i32 { a * factor }(13), // クロージャ
     );
+
+    print_nth_char("€fg", 1);
+    print_codes("€fg");
 }
 
 fn double(a: &mut [i32; 10]) {
@@ -76,4 +79,33 @@ fn double(a: &mut [i32; 10]) {
 
 fn f<T>(a: T, _b: T) -> T {
     a
+}
+
+fn print_nth_char(s: &str, mut n: u32) {
+    let mut iter: std::str::Chars = s.chars();
+    loop {
+        let item: Option<char> = iter.next();
+        match item {
+            Some(c) => {
+                if n == 0 {
+                    println!("{}", c);
+                    break;
+                }
+            }
+            None => {
+                break;
+            }
+        }
+        n -= 1;
+    }
+}
+
+fn print_codes(s: &str) {
+    let mut iter = s.chars();
+    loop {
+        match iter.next() {
+            Some(c) => println!("{}: {}", c, c as u32),
+            None => break,
+        }
+    }
 }
