@@ -71,9 +71,28 @@ fn main() {
     print_codes("€fg");
     let v = vec![10, 20, 30];
     for item in v.into_iter() {
-        print!("{} ", item+1);
+        println!("{} ", item+1);
     }
     //print!("{:?}", v);
+    mod routines {
+        pub fn f() -> u32 { g() }
+        fn g() -> u32 { 123 }
+        pub mod m {
+            pub fn f() {
+                println!("routines::m::f");
+                println!("{}", super::f()); //
+            }
+            pub mod mm {
+                pub fn f() {
+                    println!("routines::m::mm::f");
+                    println!("{}", super::super::f());
+                }
+            }
+        }
+    }
+    println!("{}", routines::f());
+    routines::m::f();
+    routines::m::mm::f();
 }
 
 fn double(a: &mut [i32; 10]) {
