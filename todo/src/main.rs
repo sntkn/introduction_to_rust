@@ -58,6 +58,7 @@ struct User {
     username: String,
 }
 
+// 以下プロダクションコードからは削除される（cfg）
 #[cfg(test)]
 mod test {
     use super::*;
