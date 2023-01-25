@@ -132,4 +132,19 @@ mod test {
             .expect(&format!("cannot convert Todo instance. body:{}", body));
         assert_eq!(vec![expected], todo);
     }
+
+    #[tokio::test]
+    async fn should_update_todo() {
+        let expected = Todo::new(1, "should_update_todo".to_string());
+        let repository = TodoRepositoryForMemory::new();
+        repository.create(CreateTodo::new("before_update_todo".to_string()));
+        let req = build_todo_req_with_json(
+            "/todos/1",
+            Method::PATCH,
+            r#"{"id":1, "text":"should_update_todo", "completed":false}"#.to_string(),
+        );
+        let res = create_app(repository).oneshot(req).await.unwrap();
+        let todo = res_to_todo(res).await;
+        assert_eq!(expected, todo);
+    }
 }

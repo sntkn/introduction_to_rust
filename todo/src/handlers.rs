@@ -39,9 +39,13 @@ pub async fn update_todo<T: TodoRepository>(
     Json(payload): Json<UpdateTodo>,
     Extension(repository): Extension<Arc<T>>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    todo!();
+    //todo!();
     // コンパイルエラーを通すため暫定でOKを返す
-    Ok(StatusCode::OK)
+    //Ok(StatusCode::OK)
+    let todo = repository
+        .update(id, payload)
+        .or(Err(StatusCode::NOT_FOUND))?;
+    Ok((StatusCode::OK, Json(todo)))
 }
 
 pub async fn delete_todo<T: TodoRepository>(
