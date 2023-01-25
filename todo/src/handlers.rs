@@ -52,5 +52,9 @@ pub async fn delete_todo<T: TodoRepository>(
     Path(id): Path<i32>,
     Extension(repository): Extension<Arc<T>>,
 ) -> StatusCode {
-    todo!()
+    //todo!()
+    repository
+        .delete(id)
+        .map(|_| StatusCode::NO_CONTENT) // Return OK
+        .unwrap_or(StatusCode::NOT_FOUND) // ERR: Return 404
 }
