@@ -156,4 +156,14 @@ mod test {
         let res = create_app(repository).oneshot(req).await.unwrap();
         assert_eq!(StatusCode::NO_CONTENT, res.status());
     }
+
+    #[tokio::test]
+    async fn should_not_delete_todo() {
+        // id が違ったら 404で削除されない
+        let repository = TodoRepositoryForMemory::new();
+        repository.create(CreateTodo::new("should_delete_todo".to_string()));
+        let req = build_todo_req_with_empty(Method::DELETE, "/todos/2");
+        let res = create_app(repository).oneshot(req).await.unwrap();
+        assert_eq!(StatusCode::NOT_FOUND, res.status());
+    }
 }
