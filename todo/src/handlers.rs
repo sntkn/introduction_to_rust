@@ -29,7 +29,9 @@ pub async fn find_todo<T: TodoRepository>(
 pub async fn all_todo<T: TodoRepository>(
     Extension(repository): Extension<Arc<T>>,
 ) -> impl IntoResponse {
-    todo!();
+    //todo!();
+    let todo = repository.all();
+    (StatusCode::OK, Json(todo))
 }
 
 pub async fn update_todo<T: TodoRepository>(
