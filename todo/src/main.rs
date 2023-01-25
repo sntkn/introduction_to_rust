@@ -7,7 +7,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use handlers::create_todo;
+use handlers::{all_todo, create_todo, delete_todo, find_todo, update_todo};
 use std::net::SocketAddr;
 use std::{env, sync::Arc};
 
@@ -32,7 +32,14 @@ async fn main() {
 fn create_app<T: TodoRepository>(repository: T) -> Router {
     Router::new()
         .route("/", get(root))
-        .route("/users", post(create_todo::<T>))
+        // axum は同一パスをメソッドチェーンで記述
+        .route("/todos", post(create_todo::<T>).get(all_todo::<T>))
+        .route(
+            "/todos/:id",
+            get(find_todo::<T>)
+                .delete(delete_todo::<T>)
+                .patch(update_todo::<T>),
+        )
         .layer(Extension(Arc::new(repository)))
 }
 
