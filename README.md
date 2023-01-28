@@ -46,6 +46,10 @@ cargo doc --open
 
 ## database
 
+### diesel
+
+ORM＋クエリビルダー
+
 ```bash
 cargo install diesel_cli --no-default-features --features sqlite-bundled
 diesel setup
@@ -54,6 +58,10 @@ diesel setup
 diesel migration generate create_posts
 diesel migration run # migrate
 ```
+
+### sqlx
+
+コンパイルチェックと非同期に対応
 
 ## aws
 
