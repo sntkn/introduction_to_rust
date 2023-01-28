@@ -15,7 +15,8 @@ pub struct ValidatedJson<T>(T);
 
 #[async_trait] // trait で async を実装するとき
 impl<T, B> FromRequest<B> for ValidatedJson<T>
-where // where はジェネリック境界を宣言
+where
+    // where はジェネリック境界を宣言
     T: DeserializeOwned + Validate,
     B: http_body::Body + Send,
     B::Data: Send,
@@ -39,9 +40,12 @@ where // where はジェネリック境界を宣言
 pub async fn create_todo<T: TodoRepository>(
     ValidatedJson(payload): ValidatedJson<CreateTodo>, // request は deserialize
     Extension(repository): Extension<Arc<T>>,
-) -> impl IntoResponse {
-    let todo = repository.create(payload);
-    (StatusCode::CREATED, Json(todo)) // response は serialize
+) -> Result<impl IntoResponse, StatusCode> {
+    let todo = repository
+        .create(payload)
+        .await
+        .or(Err(StatusCode::NOT_FOUND))?;
+    Ok((StatusCode::CREATED, Json(todo))) // response は serialize
 }
 
 pub async fn find_todo<T: TodoRepository>(
@@ -51,16 +55,16 @@ pub async fn find_todo<T: TodoRepository>(
     //todo!();
     // コンパイルエラーを通すため暫定でOKを返す
     //Ok(StatusCode::OK)
-    let todo = repository.find(id).ok_or(StatusCode::NOT_FOUND)?;
+    let todo = repository.find(id).await.or(Err(StatusCode::NOT_FOUND))?;
     Ok((StatusCode::OK, Json(todo)))
 }
 
 pub async fn all_todo<T: TodoRepository>(
     Extension(repository): Extension<Arc<T>>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, StatusCode> {
     //todo!();
-    let todo = repository.all();
-    (StatusCode::OK, Json(todo))
+    let todo = repository.all().await.unwrap();
+    Ok((StatusCode::OK, Json(todo)))
 }
 
 pub async fn update_todo<T: TodoRepository>(
@@ -73,6 +77,7 @@ pub async fn update_todo<T: TodoRepository>(
     //Ok(StatusCode::OK)
     let todo = repository
         .update(id, payload)
+        .await
         .or(Err(StatusCode::NOT_FOUND))?;
     Ok((StatusCode::OK, Json(todo)))
 }
@@ -84,6 +89,7 @@ pub async fn delete_todo<T: TodoRepository>(
     //todo!()
     repository
         .delete(id)
+        .await
         .map(|_| StatusCode::NO_CONTENT) // Return OK
         .unwrap_or(StatusCode::NOT_FOUND) // ERR: Return 404
 }

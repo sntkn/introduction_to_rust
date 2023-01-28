@@ -91,7 +91,10 @@ impl TodoRepository for TodoRepositoryForMemory {
     async fn find(&self, id: i32) -> anyhow::Result<Todo> {
         let store = self.read_store_ref();
         // 戻り値が借用になるため、clone() する。Box::new でも可
-        let todo = store.get(&id).map(|todo| todo.clone()).ok_or(RepositoryError::NotFound(id))?;
+        let todo = store
+            .get(&id)
+            .map(|todo| todo.clone())
+            .ok_or(RepositoryError::NotFound(id))?;
         Ok(todo)
     }
 
@@ -140,7 +143,10 @@ mod test {
 
         // create
         let repository = TodoRepositoryForMemory::new();
-        let todo = repository.create(CreateTodo { text }).await.expect("failed create todo");
+        let todo = repository
+            .create(CreateTodo { text })
+            .await
+            .expect("failed create todo");
         assert_eq!(expected, todo);
 
         // find
@@ -160,7 +166,8 @@ mod test {
                     text: Some(text.clone()),
                     completed: Some(true),
                 },
-            ).await
+            )
+            .await
             .expect("failed update todo.");
         assert_eq!(
             Todo {
