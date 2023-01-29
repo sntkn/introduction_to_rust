@@ -8,3 +8,5 @@ dev:
 	cargo watch -x run
 test:
 	cargo test
+test-s:
+	cargo test --no-database-features
