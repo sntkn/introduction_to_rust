@@ -1,11 +1,13 @@
 use axum::async_trait;
 use serde::{Deserialize, Serialize};
-use sqlx::{any, PgPool};
+use sqlx::{FromRow, PgPool};
 use thiserror::Error;
 use validator::Validate;
 
 #[derive(Debug, Error)]
 enum RepositoryError {
+    #[error("Unexpected Error: {0}")]
+    Unexpected(i32),
     #[error("NotFound, id is {0}")]
     NotFound(i32),
 }
@@ -19,7 +21,7 @@ pub trait TodoRepository: Clone + std::marker::Send + std::marker::Sync + 'stati
     async fn delete(&self, id: i32) -> anyhow::Result<()>;
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, FromRow)]
 pub struct Todo {
     id: i32,
     text: String,
