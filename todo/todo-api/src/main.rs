@@ -8,8 +8,12 @@ use axum::{
     Router,
 };
 use dotenv::dotenv;
-use handlers::todo::{all_todo, create_todo, delete_todo, find_todo, update_todo};
+use handlers::{
+    label::{all_label, create_label, delete_label},
+    todo::{all_todo, create_todo, delete_todo, find_todo, update_todo},
+};
 use hyper::header::CONTENT_TYPE;
+use repositories::label::LabelRepository;
 use sqlx::PgPool;
 use std::net::SocketAddr;
 use std::{env, sync::Arc};
@@ -28,8 +32,10 @@ async fn main() {
     let pool = PgPool::connect(database_url)
         .await
         .expect(&format!("fail connect database, url is [{}]", database_url));
-    let repository = TodoRepositoryForDB::new(pool.clone());
-    let app = create_app(repository);
+    let app = create_app(
+        TodoRepositoryForDB::new(pool.clone()),
+        LabelRepositoryForDB::new(pool.clone()),
+    );
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     tracing::debug!("listening on {}", addr);
 
@@ -39,18 +45,27 @@ async fn main() {
         .unwrap();
 }
 
-fn create_app<T: TodoRepository>(repository: T) -> Router {
+fn create_app<Todo: TodoRepository, Label: LabelRepository>(
+    todo_repository: Todo,
+    label_repository: Label,
+) -> Router {
     Router::new()
         .route("/", get(root))
         // axum は同一パスをメソッドチェーンで記述
-        .route("/todos", post(create_todo::<T>).get(all_todo::<T>))
+        .route("/todos", post(create_todo::<Todo>).get(all_todo::<Todo>))
         .route(
             "/todos/:id",
-            get(find_todo::<T>)
-                .delete(delete_todo::<T>)
-                .patch(update_todo::<T>),
+            get(find_todo::<Todo>)
+                .delete(delete_todo::<Todo>)
+                .patch(update_todo::<Todo>),
         )
-        .layer(Extension(Arc::new(repository)))
+        .route(
+            "/labels",
+            post(create_label::<Label>).get(all_label::<Label>),
+        )
+        .route("/labels/:id", delete(delete_label::<Label>))
+        .layer(Extension(Arc::new(todo_repository)))
+        .layer(Extension(Arc::new(label_repository)))
         .layer(
             CorsLayer::new()
                 .allow_origin(Origin::exact("http://localhost:3001".parse().unwrap()))
