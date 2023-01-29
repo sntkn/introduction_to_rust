@@ -66,7 +66,7 @@ mod test {
         let label_text = "test_label";
 
         // create
-        let created = repository
+        let label = repository
             .create(label_text.to_string())
             .await
             .expect("[create] returned Err");
