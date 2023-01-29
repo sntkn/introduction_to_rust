@@ -9,4 +9,4 @@ dev:
 test:
 	cargo test
 test-s:
-	cargo test --no-database-features
+	cargo test --no-default-features

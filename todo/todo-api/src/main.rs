@@ -53,9 +53,9 @@ fn create_app<T: TodoRepository>(repository: T) -> Router {
         .layer(Extension(Arc::new(repository)))
         .layer(
             CorsLayer::new()
-            .allow_origin(Origin::exact("http://localhost:3001".parse().unwrap()))
-            .allow_methods(Any)
-            .allow_headers(vec![CONTENT_TYPE]),
+                .allow_origin(Origin::exact("http://localhost:3001".parse().unwrap()))
+                .allow_methods(Any)
+                .allow_headers(vec![CONTENT_TYPE]),
         )
 }
 
