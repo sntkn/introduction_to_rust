@@ -1,17 +1,17 @@
 use axum::{
-  async_trait,
-  extract::{FromRequest, RequestParts},
-  http::StatusCode,
-  BoxError, Json,
+    async_trait,
+    extract::{FromRequest, RequestParts},
+    http::StatusCode,
+    BoxError, Json,
 };
 use serde::de::DeserializeOwned;
 use validator::Validate;
 
+pub mod label;
 pub mod todo;
 
 #[derive(Debug)]
 pub struct ValidatedJson<T>(T);
-
 
 #[async_trait] // trait で async を実装するとき
 impl<T, B> FromRequest<B> for ValidatedJson<T>
