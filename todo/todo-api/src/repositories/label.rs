@@ -134,25 +134,20 @@ mod test {
 #[cfg(test)]
 pub mod test_utils {
     use axum::async_trait;
-    use std::{
-        collections::HashMap,
-    };
+    use std::collections::HashMap;
 
     use super::*;
 
-    impl Label {
-    }
+    impl Label {}
 
     type LabelDatas = HashMap<i32, Label>;
 
     #[derive(Debug, Clone)]
-    pub struct LabelRepositoryForMemory {
-    }
+    pub struct LabelRepositoryForMemory {}
 
     impl LabelRepositoryForMemory {
         pub fn new() -> Self {
-            LabelRepositoryForMemory {
-            }
+            LabelRepositoryForMemory {}
         }
     }
 
@@ -161,11 +156,11 @@ pub mod test_utils {
         async fn create(&self, _name: String) -> anyhow::Result<Label> {
             todo!()
         }
-    
+
         async fn all(&self) -> anyhow::Result<Vec<Label>> {
             todo!()
         }
-    
+
         async fn delete(&self, _id: i32) -> anyhow::Result<()> {
             todo!()
         }
