@@ -6,15 +6,15 @@ use validator::Validate;
 
 #[async_trait]
 pub trait TodoRepository: Clone + std::marker::Send + std::marker::Sync + 'static {
-    async fn create(&self, payload: CreateTodo) -> anyhow::Result<Todo>;
-    async fn find(&self, id: i32) -> anyhow::Result<Todo>;
-    async fn all(&self) -> anyhow::Result<Vec<Todo>>;
-    async fn update(&self, id: i32, payload: UpdateTodo) -> anyhow::Result<Todo>;
+    async fn create(&self, payload: CreateTodo) -> anyhow::Result<TodoWithLabelFromRow>;
+    async fn find(&self, id: i32) -> anyhow::Result<TodoWithLabelFromRow>;
+    async fn all(&self) -> anyhow::Result<Vec<TodoWithLabelFromRow>>;
+    async fn update(&self, id: i32, payload: UpdateTodo) -> anyhow::Result<TodoWithLabelFromRow>;
     async fn delete(&self, id: i32) -> anyhow::Result<()>;
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, FromRow)]
-pub struct Todo {
+pub struct TodoWithLabelFromRow {
     id: i32,
     text: String,
     completed: bool,
@@ -48,9 +48,9 @@ impl TodoRepositoryForDB {
 
 #[async_trait]
 impl TodoRepository for TodoRepositoryForDB {
-    async fn create(&self, payload: CreateTodo) -> anyhow::Result<Todo> {
+    async fn create(&self, payload: CreateTodo) -> anyhow::Result<TodoWithLabelFromRow> {
         // 'returning *' を記述することで insert 結果のレコードを取得できる（pg の機能）
-        let todo = sqlx::query_as::<_, Todo>(
+        let todo = sqlx::query_as::<_, TodoWithLabelFromRow>(
             r#"
             insert into todos (text, completed)
             values ($1, false)
@@ -64,8 +64,8 @@ impl TodoRepository for TodoRepositoryForDB {
         Ok(todo)
     }
 
-    async fn find(&self, id: i32) -> anyhow::Result<Todo> {
-        let todo = sqlx::query_as::<_, Todo>(
+    async fn find(&self, id: i32) -> anyhow::Result<TodoWithLabelFromRow> {
+        let todo = sqlx::query_as::<_, TodoWithLabelFromRow>(
             r#"
             select * from todos where id=$1
         "#,
@@ -81,8 +81,8 @@ impl TodoRepository for TodoRepositoryForDB {
         Ok(todo)
     }
 
-    async fn all(&self) -> anyhow::Result<Vec<Todo>> {
-        let todo = sqlx::query_as::<_, Todo>(
+    async fn all(&self) -> anyhow::Result<Vec<TodoWithLabelFromRow>> {
+        let todo = sqlx::query_as::<_, TodoWithLabelFromRow>(
             r#"
             select * from todos order by id desc
         "#,
@@ -93,9 +93,9 @@ impl TodoRepository for TodoRepositoryForDB {
         Ok(todo)
     }
 
-    async fn update(&self, id: i32, payload: UpdateTodo) -> anyhow::Result<Todo> {
+    async fn update(&self, id: i32, payload: UpdateTodo) -> anyhow::Result<TodoWithLabelFromRow> {
         let old_todo = self.find(id).await?;
-        let todo = sqlx::query_as::<_, Todo>(
+        let todo = sqlx::query_as::<_, TodoWithLabelFromRow>(
             r#"
             update todos set text=$1, completed=$2 where id=$3
             returning *
@@ -209,7 +209,7 @@ pub mod test_utils {
 
     use super::*;
 
-    impl Todo {
+    impl TodoWithLabelFromRow {
         pub fn new(id: i32, text: String) -> Self {
             Self {
                 id,
@@ -226,7 +226,7 @@ pub mod test_utils {
         }
     }
 
-    type TodoDatas = HashMap<i32, Todo>;
+    type TodoDatas = HashMap<i32, TodoWithLabelFromRow>;
 
     #[derive(Debug, Clone)]
     pub struct TodoRepositoryForMemory {
@@ -251,15 +251,15 @@ pub mod test_utils {
 
     #[async_trait]
     impl TodoRepository for TodoRepositoryForMemory {
-        async fn create(&self, payload: CreateTodo) -> anyhow::Result<Todo> {
+        async fn create(&self, payload: CreateTodo) -> anyhow::Result<TodoWithLabelFromRow> {
             let mut store = self.write_store_ref();
             let id = (store.len() + 1) as i32;
-            let todo = Todo::new(id, payload.text.clone());
+            let todo = TodoWithLabelFromRow::new(id, payload.text.clone());
             store.insert(id, todo.clone());
             Ok(todo)
         }
 
-        async fn find(&self, id: i32) -> anyhow::Result<Todo> {
+        async fn find(&self, id: i32) -> anyhow::Result<TodoWithLabelFromRow> {
             let store = self.read_store_ref();
             // 戻り値が借用になるため、clone() する。Box::new でも可
             let todo = store
@@ -269,17 +269,21 @@ pub mod test_utils {
             Ok(todo)
         }
 
-        async fn all(&self) -> anyhow::Result<Vec<Todo>> {
+        async fn all(&self) -> anyhow::Result<Vec<TodoWithLabelFromRow>> {
             let store = self.read_store_ref();
             Ok(Vec::from_iter(store.values().map(|todo| todo.clone())))
         }
 
-        async fn update(&self, id: i32, payload: UpdateTodo) -> anyhow::Result<Todo> {
+        async fn update(
+            &self,
+            id: i32,
+            payload: UpdateTodo,
+        ) -> anyhow::Result<TodoWithLabelFromRow> {
             let mut store = self.write_store_ref();
             let todo = store.get(&id).context(RepositoryError::NotFound(id))?;
             let text = payload.text.unwrap_or(todo.text.clone());
             let completed = payload.completed.unwrap_or(todo.completed);
-            let todo = Todo {
+            let todo = TodoWithLabelFromRow {
                 id,
                 text,
                 completed,
@@ -303,7 +307,7 @@ pub mod test_utils {
         async fn todo_crud_scenario() {
             let text = "todo text".to_string();
             let id = 1;
-            let expected = Todo::new(id, text.clone());
+            let expected = TodoWithLabelFromRow::new(id, text.clone());
 
             // create
             let repository = TodoRepositoryForMemory::new();
@@ -334,7 +338,7 @@ pub mod test_utils {
                 .await
                 .expect("failed update todo.");
             assert_eq!(
-                Todo {
+                TodoWithLabelFromRow {
                     id,
                     text,
                     completed: true,
