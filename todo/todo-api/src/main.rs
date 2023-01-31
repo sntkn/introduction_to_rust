@@ -7,7 +7,7 @@ use crate::repositories::{
 };
 use axum::{
     extract::Extension,
-    routing::{get, post},
+    routing::{delete, get, post},
     Router,
 };
 use dotenv::dotenv;
@@ -66,7 +66,7 @@ fn create_app<Todo: TodoRepository, Label: LabelRepository>(
             "/labels",
             post(create_label::<Label>).get(all_label::<Label>),
         )
-        // .route("/labels/:id", delete(delete_label::<Label>)) // なんか delete はメソッドチェーンしないとエラーになるのでとりあえずコメントアウト
+        .route("/labels/:id", delete(delete_label::<Label>)) // なんか delete はメソッドチェーンしないとエラーになるのでとりあえずコメントアウト
         .layer(Extension(Arc::new(todo_repository)))
         .layer(Extension(Arc::new(label_repository)))
         .layer(
