@@ -1,4 +1,4 @@
-use super::RepositoryError;
+use super::{label::Label, RepositoryError};
 use axum::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool};
@@ -18,6 +18,37 @@ pub struct TodoWithLabelFromRow {
     id: i32,
     text: String,
     completed: bool,
+    //label_id: Option<i32>,
+    //label_name: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, FromRow)]
+pub struct TodoEntity {
+    pub id: i32,
+    pub text: String,
+    pub completed: bool,
+    pub labels: Vec<Label>,
+}
+
+fn fold_entities(rows: Vec<TodoWithLabelFromRow>) -> Vec<TodoEntity> {
+    rows.iter()
+        .fold(vec![], |mut accum: Vec<TodoEntity>, current| {
+            // todo 同一IDの畳み込み
+            // todo 同一IDの場合、Labalを作成し`labels`へpush
+            accum.push(TodoEntity {
+                id: current.id,
+                text: current.text.clone(),
+                completed: current.completed,
+                labels: vec![],
+            });
+            accum
+        })
+}
+
+fn fold_entity(row: TodoWithLabelFromRow) -> TodoEntity {
+    let todo_entities = fold_entities((vec![row]));
+    let todo = todo_entities.first().expect("expect 1 todo");
+    todo.clone()
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Validate)]
