@@ -72,6 +72,7 @@ pub struct UpdateTodo {
     #[validate(length(max = 100, message = "Over text length"))]
     text: Option<String>,
     completed: Option<bool>,
+    labels: Option<Vec<i32>>,
 }
 
 #[derive(Debug, Clone)]
@@ -147,7 +148,11 @@ impl TodoRepository for TodoRepositoryForDB {
     async fn all(&self) -> anyhow::Result<Vec<TodoEntity>> {
         let todo = sqlx::query_as::<_, TodoWithLabelFromRow>(
             r#"
-            select * from todos order by id desc
+            select todos.*, labels.id as label_id, labels.name as label_name
+            from todos
+            left outer join todo_labels tl on todos.id = tl.todo_id
+            left outer join labels on labels.id = tl.label_id
+            order by todos.id desc
         "#,
         )
         .fetch_all(&self.pool)
@@ -157,11 +162,13 @@ impl TodoRepository for TodoRepositoryForDB {
     }
 
     async fn update(&self, id: i32, payload: UpdateTodo) -> anyhow::Result<TodoEntity> {
+        let tx = self.pool.begin().await?;
+
+        // todo update
         let old_todo = self.find(id).await?;
-        let todo = sqlx::query_as::<_, TodoWithLabelFromRow>(
+        sqlx::query(
             r#"
             update todos set text=$1, completed=$2 where id=$3
-            returning *
         "#,
         )
         .bind(payload.text.unwrap_or(old_todo.text)) // text が空の場合は元の情報を入れる
@@ -170,7 +177,35 @@ impl TodoRepository for TodoRepositoryForDB {
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(fold_entity(todo))
+        if let Some(labels) = payload.labels {
+            // todo's labels update
+            // 一度関連するレコードを削除
+            sqlx::query(
+                r#"
+                delete from todos_labels where todo_id=$1
+                "#,
+            )
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+
+            sqlx::query(
+                r#"
+                insert into todos_labels (todo_id, label_id)
+                select $1, id
+                from unnest($2) as t(id)
+            "#,
+            )
+            .bind(id)
+            .bind(labels)
+            .execute(&self.pool)
+            .await?;
+        };
+
+        tx.commit().await?;
+        let todo = self.find(id).await?;
+
+        Ok(todo)
     }
 
     async fn delete(&self, id: i32) -> anyhow::Result<()> {
@@ -314,12 +349,14 @@ mod test {
                 UpdateTodo {
                     text: Some(updated_text.to_string()),
                     completed: Some(false),
+                    labels: Some(vec![]),
                 },
             )
             .await
             .expect("[update] returned Err");
         assert_eq!(created.id, todo.id);
         assert_eq!(todo.text, updated_text);
+        assert!(todo.labels.len() == 0);
 
         // delete
         let _ = repository
@@ -473,6 +510,7 @@ pub mod test_utils {
                     UpdateTodo {
                         text: Some(text.clone()),
                         completed: Some(true),
+                        labels: Some(vec![]),
                     },
                 )
                 .await
