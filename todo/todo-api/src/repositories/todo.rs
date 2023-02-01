@@ -22,6 +22,13 @@ pub struct TodoWithLabelFromRow {
     label_name: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, FromRow)]
+struct TodoFromRow {
+    id: i32,
+    text: String,
+    completed: bool,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, FromRow)]
 pub struct TodoEntity {
     pub id: i32,
@@ -56,6 +63,7 @@ pub struct CreateTodo {
     #[validate(length(min = 1, message = "Can not be empty"))]
     #[validate(length(max = 100, message = "Over text length"))]
     text: String,
+    labels: Vec<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Validate)]
@@ -80,8 +88,9 @@ impl TodoRepositoryForDB {
 #[async_trait]
 impl TodoRepository for TodoRepositoryForDB {
     async fn create(&self, payload: CreateTodo) -> anyhow::Result<TodoEntity> {
+        let tx = self.pool.begin().await?;
         // 'returning *' を記述することで insert 結果のレコードを取得できる（pg の機能）
-        let todo = sqlx::query_as::<_, TodoWithLabelFromRow>(
+        let row = sqlx::query_as::<_, TodoFromRow>(
             r#"
             insert into todos (text, completed)
             values ($1, false)
@@ -92,24 +101,47 @@ impl TodoRepository for TodoRepositoryForDB {
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(fold_entity(todo))
+        sqlx::query(
+            r#"
+            insert into todos_labels (todo_id, label_id)
+            select $1, id
+            from unnest($2) as t(id)
+        "#,
+        )
+        .bind(row.id)
+        .bind(payload.labels)
+        .execute(&self.pool)
+        .await?;
+
+        tx.commit().await?;
+
+        let todo = self.find(row.id).await?;
+
+        Ok(todo)
     }
 
     async fn find(&self, id: i32) -> anyhow::Result<TodoEntity> {
-        let todo = sqlx::query_as::<_, TodoWithLabelFromRow>(
+        let items = sqlx::query_as::<_, TodoWithLabelFromRow>(
             r#"
-            select * from todos where id=$1
+            select todos.*, labels.id as label_id, labels.name as label_name
+            from todos
+            left outer join todo_labels tl on todos.id = tl.todo_id
+            left outer join labels on labels.id = tl.label_id
+            where todos.id=$1
         "#,
         )
         .bind(id)
-        .fetch_one(&self.pool)
+        .fetch_all(&self.pool)
         .await
         .map_err(|e| match e {
             sqlx::Error::RowNotFound => RepositoryError::NotFound(id),
             _ => RepositoryError::Unexpected(e.to_string()),
         })?;
 
-        Ok(fold_entity(todo))
+        let todos = fold_entities(items);
+        let todo = todos.first().ok_or(RepositoryError::NotFound(id))?;
+
+        Ok(todo.clone())
     }
 
     async fn all(&self) -> anyhow::Result<Vec<TodoEntity>> {
@@ -227,12 +259,36 @@ mod test {
         let pool = PgPool::connect(database_url)
             .await
             .expect(&format!("fail connect database, url is [{}]", database_url));
+
+        let label_name = String::from("test label");
+        let optional_label = sqlx::query_as::<_, Label>(r#"select * from labels where name = $1"#)
+            .bind(label_name.clone())
+            .fetch_optional(&pool)
+            .await
+            .expect("Failed to prepare label data");
+        let label_1 = if let Some(label) = optional_label {
+            label
+        } else {
+            let label = sqlx::query_as::<_, Label>(
+                r#"
+                insert into labels (name)
+                values ($1)
+                returning *
+                "#,
+            )
+            .bind(label_name)
+            .fetch_one(&pool)
+            .await
+            .expect("Failed to insert label data");
+            label
+        };
+
         let repository = TodoRepositoryForDB::new(pool.clone());
         let todo_text = "[crud_scenario] text";
 
         // create
         let created = repository
-            .create(CreateTodo::new(todo_text.to_string()))
+            .create(CreateTodo::new(todo_text.to_string(), vec![label_1.id]))
             .await
             .expect("[create] returned Err");
         assert_eq!(created.text, todo_text);
@@ -306,8 +362,8 @@ pub mod test_utils {
 
     #[cfg(test)]
     impl CreateTodo {
-        pub fn new(text: String) -> Self {
-            Self { text }
+        pub fn new(text: String, labels: Vec<i32>) -> Self {
+            Self { text, labels }
         }
     }
 
@@ -392,9 +448,11 @@ pub mod test_utils {
             let expected = TodoEntity::new(id, text.clone());
 
             // create
+            todo!("label1データ追加");
+            let labels = vec![];
             let repository = TodoRepositoryForMemory::new();
             let todo = repository
-                .create(CreateTodo { text })
+                .create(CreateTodo { text, labels })
                 .await
                 .expect("failed create todo");
             assert_eq!(expected, todo);
