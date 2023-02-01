@@ -18,8 +18,8 @@ pub struct TodoWithLabelFromRow {
     id: i32,
     text: String,
     completed: bool,
-    //label_id: Option<i32>,
-    //label_name: Option<String>,
+    label_id: Option<i32>,
+    label_name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, FromRow)]
@@ -165,6 +165,59 @@ mod test {
     use dotenv::dotenv;
     use sqlx::PgPool;
     use std::env;
+
+    #[test]
+    fn fold_entities_test() {
+        let label_1 = Label {
+            id: 1,
+            name: String::from("label 1"),
+        };
+        let label_2 = Label {
+            id: 2,
+            name: String::from("label 2"),
+        };
+        let rows = vec![
+            TodoWithLabelFromRow {
+                id: 1,
+                text: String::from("todo 1"),
+                completed: false,
+                label_id: Some(label_1.id),
+                label_name: Some(label_1.name.clone()),
+            },
+            TodoWithLabelFromRow {
+                id: 1,
+                text: String::from("todo 1"),
+                completed: false,
+                label_id: Some(label_2.id),
+                label_name: Some(label_2.name.clone()),
+            },
+            TodoWithLabelFromRow {
+                id: 2,
+                text: String::from("todo 2"),
+                completed: false,
+                label_id: Some(label_1.id),
+                label_name: Some(label_1.name.clone()),
+            },
+        ];
+        let res = fold_entities(rows);
+        assert_eq!(
+            res,
+            vec![
+                TodoEntity {
+                    id: 1,
+                    text: String::from("todo 1"),
+                    completed: false,
+                    labels: vec![label_1.clone(), label_2.clone()],
+                },
+                TodoEntity {
+                    id: 2,
+                    text: String::from("todo 2"),
+                    completed: false,
+                    labels: vec![label_1.clone()],
+                },
+            ]
+        );
+    }
 
     #[tokio::test]
     async fn crud_scenario() {
