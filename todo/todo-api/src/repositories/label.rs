@@ -109,7 +109,7 @@ mod test {
             .await
             .expect(&format!("fail connect database, url is [{}]", database_url));
         let repository = LabelRepositoryForDB::new(pool);
-        let label_text = "test_label";
+        let label_text = "test label";
 
         // create
         let label = repository

@@ -38,24 +38,39 @@ pub struct TodoEntity {
 }
 
 fn fold_entities(rows: Vec<TodoWithLabelFromRow>) -> Vec<TodoEntity> {
-    rows.iter()
-        .fold(vec![], |mut accum: Vec<TodoEntity>, current| {
-            // todo 同一IDの畳み込み
-            // todo 同一IDの場合、Labalを作成し`labels`へpush
-            accum.push(TodoEntity {
-                id: current.id,
-                text: current.text.clone(),
-                completed: current.completed,
-                labels: vec![],
-            });
-            accum
-        })
-}
+    let mut rows = rows.iter();
+    let mut accum: Vec<TodoEntity> = vec![];
+    'outer: while let Some(row) = rows.next() {
+        let mut todos = accum.iter_mut();
+        while let Some(todo) = todos.next() {
+            // idが一致＝Todoに紐づくラベルが複数存在している
+            if todo.id == row.id {
+                todo.labels.push(Label {
+                    id: row.label_id.unwrap(),
+                    name: row.label_name.clone().unwrap(),
+                });
+                continue 'outer;
+            }
+        }
 
-fn fold_entity(row: TodoWithLabelFromRow) -> TodoEntity {
-    let todo_entities = fold_entities(vec![row]);
-    let todo = todo_entities.first().expect("expect 1 todo");
-    todo.clone()
+        // Todoのidに一致がなかった時のみ到達、TodoEntityを作成
+        let labels = if row.label_id.is_some() {
+            vec![Label {
+                id: row.label_id.unwrap(),
+                name: row.label_name.clone().unwrap(),
+            }]
+        } else {
+            vec![]
+        };
+
+        accum.push(TodoEntity {
+            id: row.id,
+            text: row.text.clone(),
+            completed: row.completed,
+            labels,
+        });
+    }
+    accum
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Validate)]
@@ -95,7 +110,7 @@ impl TodoRepository for TodoRepositoryForDB {
             r#"
             insert into todos (text, completed)
             values ($1, false)
-            returning *
+            returning *;
         "#,
         )
         .bind(payload.text.clone())
@@ -104,9 +119,9 @@ impl TodoRepository for TodoRepositoryForDB {
 
         sqlx::query(
             r#"
-            insert into todos_labels (todo_id, label_id)
+            insert into todo_labels (todo_id, label_id)
             select $1, id
-            from unnest($2) as t(id)
+            from unnest($2) as t(id);
         "#,
         )
         .bind(row.id)
@@ -128,7 +143,7 @@ impl TodoRepository for TodoRepositoryForDB {
             from todos
             left outer join todo_labels tl on todos.id = tl.todo_id
             left outer join labels on labels.id = tl.label_id
-            where todos.id=$1
+            where todos.id=$1;
         "#,
         )
         .bind(id)
@@ -412,12 +427,12 @@ pub mod test_utils {
     use super::*;
 
     impl TodoEntity {
-        pub fn new(id: i32, text: String) -> Self {
+        pub fn new(id: i32, text: String, labels: Vec<Label>) -> Self {
             Self {
                 id,
                 text,
                 completed: false,
-                labels: vec![],
+                labels,
             }
         }
     }
@@ -434,12 +449,14 @@ pub mod test_utils {
     #[derive(Debug, Clone)]
     pub struct TodoRepositoryForMemory {
         store: Arc<RwLock<TodoDatas>>,
+        labels: Vec<Label>,
     }
 
     impl TodoRepositoryForMemory {
-        pub fn new() -> Self {
+        pub fn new(labels: Vec<Label>) -> Self {
             TodoRepositoryForMemory {
                 store: Arc::default(),
+                labels,
             }
         }
 
@@ -450,6 +467,15 @@ pub mod test_utils {
         fn read_store_ref(&self) -> RwLockReadGuard<TodoDatas> {
             self.store.read().unwrap()
         }
+
+        fn resolve_labels(&self, labels: Vec<i32>) -> Vec<Label> {
+            let mut label_list = self.labels.iter().cloned();
+            let labels = labels
+                .iter()
+                .map(|id| label_list.find(|label| label.id == *id).unwrap())
+                .collect();
+            labels
+        }
     }
 
     #[async_trait]
@@ -457,7 +483,8 @@ pub mod test_utils {
         async fn create(&self, payload: CreateTodo) -> anyhow::Result<TodoEntity> {
             let mut store = self.write_store_ref();
             let id = (store.len() + 1) as i32;
-            let todo = TodoEntity::new(id, payload.text.clone());
+            let labels = self.resolve_labels(payload.labels);
+            let todo = TodoEntity::new(id, payload.text.clone(), labels);
             store.insert(id, todo.clone());
             Ok(todo)
         }
@@ -500,6 +527,7 @@ pub mod test_utils {
         }
     }
 
+    #[cfg(test)]
     mod test {
         use super::*;
 
@@ -507,14 +535,27 @@ pub mod test_utils {
         async fn todo_crud_scenario() {
             let text = "todo text".to_string();
             let id = 1;
-            let expected = TodoEntity::new(id, text.clone());
+            let label_data = Label {
+                id: 1,
+                name: String::from("test label"),
+            };
+            let labels = vec![label_data.clone()];
+            let expected = TodoEntity {
+                id,
+                text: text.clone(),
+                completed: false,
+                labels: labels.clone(),
+            };
 
             // create
-            todo!("label1データ追加");
-            let labels = vec![];
-            let repository = TodoRepositoryForMemory::new();
+            let label_data = Label {
+                id: 1,
+                name: String::from("test label"),
+            };
+            let labels = vec![label_data.clone()];
+            let repository = TodoRepositoryForMemory::new(labels.clone());
             let todo = repository
-                .create(CreateTodo { text, labels })
+                .create(CreateTodo::new(text, vec![label_data.id]))
                 .await
                 .expect("failed create todo");
             assert_eq!(expected, todo);
@@ -545,10 +586,14 @@ pub mod test_utils {
                     id,
                     text,
                     completed: true,
-                    labels: vec![]
+                    labels: vec![],
                 },
                 todo
             );
+
+            // delete
+            let res = repository.delete(id).await;
+            assert!(res.is_ok())
         }
     }
 }

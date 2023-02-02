@@ -96,7 +96,7 @@ mod test {
 
     #[tokio::test]
     async fn should_return_hello_world() {
-        let todo_repository = TodoRepositoryForMemory::new();
+        let todo_repository = TodoRepositoryForMemory::new(vec![]);
         let label_repository = LabelRepositoryForMemory::new();
         let req = Request::builder().uri("/").body(Body::empty()).unwrap();
         let res = create_app(todo_repository, label_repository)
@@ -135,8 +135,8 @@ mod test {
 
     #[tokio::test]
     async fn should_create_todo() {
-        let expected = TodoEntity::new(1, "shoud_return_created_todo".to_string());
-        let todo_repository = TodoRepositoryForMemory::new();
+        let expected = TodoEntity::new(1, "shoud_return_created_todo".to_string(), vec![]);
+        let todo_repository = TodoRepositoryForMemory::new(vec![]);
         let label_repository = LabelRepositoryForMemory::new();
         let req = build_todo_req_with_json(
             "/todos",
@@ -153,11 +153,11 @@ mod test {
 
     #[tokio::test]
     async fn should_find_todo() {
-        let expected = TodoEntity::new(1, "should_find_todo".to_string());
-        let todo_repository = TodoRepositoryForMemory::new();
+        let expected = TodoEntity::new(1, "should_find_todo".to_string(), vec![]);
+        let todo_repository = TodoRepositoryForMemory::new(vec![]);
         let label_repository = LabelRepositoryForMemory::new();
         todo_repository
-            .create(CreateTodo::new("should_find_todo".to_string()))
+            .create(CreateTodo::new("should_find_todo".to_string(), vec![]))
             .await
             .expect("failed create todo");
         let req = build_todo_req_with_empty(Method::GET, "/todos/1");
@@ -171,11 +171,11 @@ mod test {
 
     #[tokio::test]
     async fn shoud_get_all_todos() {
-        let expected = TodoEntity::new(1, "should_get_all_todos".to_string());
-        let todo_repository = TodoRepositoryForMemory::new();
+        let expected = TodoEntity::new(1, "should_get_all_todos".to_string(), vec![]);
+        let todo_repository = TodoRepositoryForMemory::new(vec![]);
         let label_repository = LabelRepositoryForMemory::new();
         todo_repository
-            .create(CreateTodo::new("should_get_all_todos".to_string()))
+            .create(CreateTodo::new("should_get_all_todos".to_string(), vec![]))
             .await
             .expect("failed create todo");
         let req = build_todo_req_with_empty(Method::GET, "/todos");
@@ -192,11 +192,11 @@ mod test {
 
     #[tokio::test]
     async fn should_update_todo() {
-        let expected = TodoEntity::new(1, "should_update_todo".to_string());
-        let todo_repository = TodoRepositoryForMemory::new();
+        let expected = TodoEntity::new(1, "should_update_todo".to_string(), vec![]);
+        let todo_repository = TodoRepositoryForMemory::new(vec![]);
         let label_repository = LabelRepositoryForMemory::new();
         todo_repository
-            .create(CreateTodo::new("before_update_todo".to_string()))
+            .create(CreateTodo::new("before_update_todo".to_string(), vec![]))
             .await
             .expect("failed create todo");
         let req = build_todo_req_with_json(
@@ -214,10 +214,10 @@ mod test {
 
     #[tokio::test]
     async fn should_delete_todo() {
-        let todo_repository = TodoRepositoryForMemory::new();
+        let todo_repository = TodoRepositoryForMemory::new(vec![]);
         let label_repository = LabelRepositoryForMemory::new();
         todo_repository
-            .create(CreateTodo::new("should_delete_todo".to_string()))
+            .create(CreateTodo::new("should_delete_todo".to_string(), vec![]))
             .await
             .expect("failed create todo");
         let req = build_todo_req_with_empty(Method::DELETE, "/todos/1");
@@ -231,10 +231,10 @@ mod test {
     #[tokio::test]
     async fn should_not_delete_todo() {
         // id が違ったら 404で削除されない
-        let todo_repository = TodoRepositoryForMemory::new();
+        let todo_repository = TodoRepositoryForMemory::new(vec![]);
         let label_repository = LabelRepositoryForMemory::new();
         todo_repository
-            .create(CreateTodo::new("should_delete_todo".to_string()))
+            .create(CreateTodo::new("should_delete_todo".to_string(), vec![]))
             .await
             .expect("failed create todo");
         let req = build_todo_req_with_empty(Method::DELETE, "/todos/2");
