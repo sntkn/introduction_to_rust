@@ -209,6 +209,22 @@ impl TodoRepository for TodoRepositoryForDB {
     }
 
     async fn delete(&self, id: i32) -> anyhow::Result<()> {
+        let tx = self.pool.begin().await?;
+        // todo's label delete
+        sqlx::query(
+            r#"
+            delete from todos_labels where id=$1
+        "#,
+        )
+        .bind(id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => RepositoryError::NotFound(id),
+            _ => RepositoryError::Unexpected(e.to_string()),
+        })?;
+
+        // todo delete
         sqlx::query(
             r#"
             delete from todos where id=$1
@@ -221,6 +237,8 @@ impl TodoRepository for TodoRepositoryForDB {
             sqlx::Error::RowNotFound => RepositoryError::NotFound(id),
             _ => RepositoryError::Unexpected(e.to_string()),
         })?;
+
+        tx.commit().await?;
 
         Ok(())
     }
@@ -372,6 +390,13 @@ mod test {
             .await
             .expect("[delete] todo_labels fetch error");
         assert!(todo_rows.len() == 0);
+
+        let rows = sqlx::query(r#"select * from todo_labels where todo_id=$1"#)
+            .bind(todo.id)
+            .fetch_all(&pool)
+            .await
+            .expect("[delete] todo_labels fetch error");
+        assert!(rows.len() == 0);
     }
 }
 
