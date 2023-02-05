@@ -167,7 +167,7 @@ impl TodoRepository for TodoRepositoryForDB {
             from todos
             left outer join todo_labels tl on todos.id = tl.todo_id
             left outer join labels on labels.id = tl.label_id
-            order by todos.id desc
+            order by todos.id desc;
         "#,
         )
         .fetch_all(&self.pool)
@@ -183,13 +183,13 @@ impl TodoRepository for TodoRepositoryForDB {
         let old_todo = self.find(id).await?;
         sqlx::query(
             r#"
-            update todos set text=$1, completed=$2 where id=$3
+            update todos set text=$1, completed=$2 where id=$3;
         "#,
         )
         .bind(payload.text.unwrap_or(old_todo.text)) // text が空の場合は元の情報を入れる
         .bind(payload.completed.unwrap_or(old_todo.completed))
         .bind(id)
-        .fetch_one(&self.pool)
+        .execute(&self.pool)
         .await?;
 
         if let Some(labels) = payload.labels {
@@ -197,7 +197,7 @@ impl TodoRepository for TodoRepositoryForDB {
             // 一度関連するレコードを削除
             sqlx::query(
                 r#"
-                delete from todos_labels where todo_id=$1
+                delete from todo_labels where todo_id=$1;
                 "#,
             )
             .bind(id)
@@ -206,9 +206,9 @@ impl TodoRepository for TodoRepositoryForDB {
 
             sqlx::query(
                 r#"
-                insert into todos_labels (todo_id, label_id)
+                insert into todo_labels (todo_id, label_id)
                 select $1, id
-                from unnest($2) as t(id)
+                from unnest($2) as t(id);
             "#,
             )
             .bind(id)
@@ -228,7 +228,7 @@ impl TodoRepository for TodoRepositoryForDB {
         // todo's label delete
         sqlx::query(
             r#"
-            delete from todos_labels where id=$1
+            delete from todo_labels where todo_id=$1;
         "#,
         )
         .bind(id)
@@ -242,7 +242,7 @@ impl TodoRepository for TodoRepositoryForDB {
         // todo delete
         sqlx::query(
             r#"
-            delete from todos where id=$1
+            delete from todos where id=$1;
         "#,
         )
         .bind(id)
@@ -374,6 +374,31 @@ mod test {
         let todo = todos.first().unwrap();
         assert_eq!(created, *todo);
 
+        let update_label_name = String::from("test label");
+        let optional_update_label =
+            sqlx::query_as::<_, Label>(r#"select * from labels where name = $1"#)
+                .bind(update_label_name.clone())
+                .fetch_optional(&pool)
+                .await
+                .expect("Failed to prepare label data");
+
+        let update_label_2 = if let Some(label) = optional_update_label {
+            label
+        } else {
+            let label = sqlx::query_as::<_, Label>(
+                r#"
+                insert into labels (name)
+                values ($1)
+                returning *
+                "#,
+            )
+            .bind(update_label_name)
+            .fetch_one(&pool)
+            .await
+            .expect("Failed to insert label data");
+            label
+        };
+
         // update
         let updated_text = "[crud_scenario] update text";
         let todo = repository
@@ -382,14 +407,15 @@ mod test {
                 UpdateTodo {
                     text: Some(updated_text.to_string()),
                     completed: Some(false),
-                    labels: Some(vec![]),
+                    labels: Some(vec![update_label_2.id]),
                 },
             )
             .await
             .expect("[update] returned Err");
         assert_eq!(created.id, todo.id);
         assert_eq!(todo.text, updated_text);
-        assert!(todo.labels.len() == 0);
+        assert!(todo.labels.len() == 1);
+        assert_eq!(update_label_2.name, todo.labels.first().unwrap().name);
 
         // delete
         let _ = repository

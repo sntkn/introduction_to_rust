@@ -109,7 +109,7 @@ mod test {
             .await
             .expect(&format!("fail connect database, url is [{}]", database_url));
         let repository = LabelRepositoryForDB::new(pool);
-        let label_text = "test label";
+        let label_text = "test label a";
 
         // create
         let label = repository
@@ -120,7 +120,7 @@ mod test {
 
         // all
         let labels = repository.all().await.expect("[all] returned Err");
-        let label = labels.first().unwrap();
+        let label = labels.last().unwrap(); // todos でラベル作ってる関係？
         assert_eq!(label.name, label_text);
 
         // delete
