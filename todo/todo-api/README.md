@@ -39,3 +39,7 @@ impl TodoRepository for TodoRepositoryForMemory {
 - [ ] ログイン機能
 - [ ] 日付順のソート機能
 - [ ] マークダウン解析し、Todo の詳細情報を保存
+
+## Docs
+
+- [Rust Web Framework comparison](https://kerkour.com/rust-web-framework-2022)

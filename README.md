@@ -48,7 +48,7 @@ cargo doc --open
 
 ### diesel
 
-ORM＋クエリビルダー
+ORM ＋クエリビルダー
 
 ```bash
 cargo install diesel_cli --no-default-features --features sqlite-bundled
@@ -62,6 +62,15 @@ diesel migration run # migrate
 ### sqlx
 
 コンパイルチェックと非同期に対応
+
+```bash
+cargo install sqlx-cli
+
+
+# migration
+sqlx migrate add label
+sqlx migrate run
+```
 
 ## aws
 
@@ -112,11 +121,11 @@ for も含めて `{}` の中はスコープが違う
 
 ### Collection
 
--|型|長|代入
----|---|---|---
-tuple|複合|固定長|不可
-array|単一|固定長|可(mut)
-vector|単一|可変長|可(mut)
+| -      | 型   | 長     | 代入    |
+| ------ | ---- | ------ | ------- |
+| tuple  | 複合 | 固定長 | 不可    |
+| array  | 単一 | 固定長 | 可(mut) |
+| vector | 単一 | 可変長 | 可(mut) |
 
 ```rust
 let t: (i32, f64, &str) = (100, 1.01, "hundred") // tuple
@@ -206,7 +215,7 @@ x.is_ok(), x.is_err(), x.unwrap(),
 
 ### slice
 
-slice参照を使えばどんな配列でも処理できる
+slice 参照を使えばどんな配列でも処理できる
 
 ```rust
 // slice reference &[i32]
