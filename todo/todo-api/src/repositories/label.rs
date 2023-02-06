@@ -134,13 +134,10 @@ mod test {
 #[cfg(test)]
 pub mod test_utils {
     use axum::async_trait;
-    use std::collections::HashMap;
 
     use super::*;
 
     impl Label {}
-
-    type LabelDatas = HashMap<i32, Label>;
 
     #[derive(Debug, Clone)]
     pub struct LabelRepositoryForMemory {}
