@@ -21,7 +21,13 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Post::Title).string().not_null())
-                    .col(ColumnDef::new(Post::Text).string().not_null())
+                    .col(ColumnDef::new(Post::Body).text().not_null())
+                    .col(
+                        ColumnDef::new(Post::Published)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
                     .to_owned(),
             )
             .await
@@ -42,5 +48,6 @@ enum Post {
     Table,
     Id,
     Title,
-    Text,
+    Body,
+    Published,
 }
