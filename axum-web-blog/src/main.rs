@@ -1,8 +1,13 @@
 use axum::{
     extract,
+    http::StatusCode,
+    response::IntoResponse,
     routing::{get, post},
     Json, Router,
 };
+use dotenv;
+use entity::post;
+use sea_orm::{ActiveModelTrait, ActiveValue, Database, DbConn, DbErr};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
@@ -42,10 +47,29 @@ struct Post {
     body: String,
 }
 
-async fn create_post(extract::Json(payload): extract::Json<CreatePost>) -> Json<Post> {
-    let post = Post {
-        title: payload.title.to_string(),
-        body: payload.body.to_string(),
+async fn create_post(
+    extract::Json(payload): extract::Json<CreatePost>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let db = connection().await.unwrap();
+    let post = post::ActiveModel {
+        id: ActiveValue::NotSet,
+        title: ActiveValue::set(payload.title.to_string()),
+        body: ActiveValue::set(payload.body.to_string()),
+        published: ActiveValue::set(false),
     };
-    Json(post)
+    let post = post.insert(&db).await.unwrap(); //or(Err(StatusCode::NOT_FOUND));
+
+    Ok(Json(Post {
+        title: post.title.to_string(),
+        body: post.body.to_string(),
+    }))
+}
+
+pub async fn connection() -> Result<DbConn, DbErr> {
+    let database_url = dotenv::var("DATABASE_URL").unwrap();
+    let db = Database::connect(&database_url)
+        .await
+        .expect("Failed to setup the database");
+
+    Ok(db)
 }

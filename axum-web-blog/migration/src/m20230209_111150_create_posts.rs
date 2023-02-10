@@ -1,5 +1,5 @@
+use entity::post;
 use sea_orm_migration::prelude::*;
-
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
@@ -11,19 +11,19 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Post::Table)
+                    .table(post::Entity)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Post::Id)
+                        ColumnDef::new(post::Column::Id)
                             .integer()
                             .not_null()
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Post::Title).string().not_null())
-                    .col(ColumnDef::new(Post::Body).text().not_null())
+                    .col(ColumnDef::new(post::Column::Title).string().not_null())
+                    .col(ColumnDef::new(post::Column::Body).text().not_null())
                     .col(
-                        ColumnDef::new(Post::Published)
+                        ColumnDef::new(post::Column::Published)
                             .boolean()
                             .not_null()
                             .default(false),
@@ -37,17 +37,7 @@ impl MigrationTrait for Migration {
         // Replace the sample below with your own migration scripts
 
         manager
-            .drop_table(Table::drop().table(Post::Table).to_owned())
+            .drop_table(Table::drop().table(post::Entity).to_owned())
             .await
     }
-}
-
-/// Learn more at https://docs.rs/sea-query#iden
-#[derive(Iden)]
-enum Post {
-    Table,
-    Id,
-    Title,
-    Body,
-    Published,
 }
