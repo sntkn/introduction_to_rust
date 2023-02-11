@@ -1,5 +1,6 @@
 use axum::{
     extract,
+    extract::Path,
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
@@ -7,7 +8,7 @@ use axum::{
 };
 use dotenv;
 use entity::post;
-use sea_orm::{ActiveModelTrait, ActiveValue, Database, DbConn, DbErr};
+use sea_orm::{ActiveModelTrait, ActiveValue, Database, DbConn, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
@@ -16,7 +17,8 @@ async fn main() {
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     let router = Router::new()
         .route("/", get(hello_world))
-        .route("/posts", post(create_post));
+        .route("/posts", post(create_post))
+        .route("/posts/:id", get(find_post));
     axum::Server::bind(&addr)
         .serve(router.into_make_service())
         .await
@@ -42,7 +44,8 @@ struct CreatePost {
 }
 
 #[derive(Serialize)]
-struct Post {
+struct ResponsePost {
+    id: i32,
     title: String,
     body: String,
 }
@@ -59,10 +62,25 @@ async fn create_post(
     };
     let post = post.insert(&db).await.unwrap(); //or(Err(StatusCode::NOT_FOUND));
 
-    Ok(Json(Post {
+    Ok(Json(ResponsePost {
+        id: post.id,
         title: post.title.to_string(),
         body: post.body.to_string(),
     }))
+}
+
+async fn find_post(Path(id): Path<i32>) -> Result<impl IntoResponse, StatusCode> {
+    let db = connection().await.unwrap();
+    let post = post::Entity::find_by_id(id).one(&db).await.unwrap();
+
+    match post {
+        Some(post) => Ok(Json(ResponsePost {
+            id,
+            title: post.title.to_string(),
+            body: post.body.to_string(),
+        })),
+        None => Err(StatusCode::NOT_FOUND),
+    }
 }
 
 pub async fn connection() -> Result<DbConn, DbErr> {
