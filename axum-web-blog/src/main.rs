@@ -8,7 +8,9 @@ use axum::{
 };
 use dotenv;
 use entity::post::{self, ActiveModel};
-use sea_orm::{ActiveModelTrait, ActiveValue, Database, DbConn, DbErr, EntityTrait, Set};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue, Database, DbConn, DbErr, DeleteResult, EntityTrait, Set,
+};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
@@ -18,7 +20,10 @@ async fn main() {
     let router = Router::new()
         .route("/", get(hello_world))
         .route("/posts", post(create_post).get(all_post))
-        .route("/posts/:id", get(find_post).patch(update_post));
+        .route(
+            "/posts/:id",
+            get(find_post).patch(update_post).delete(delete_post),
+        );
     axum::Server::bind(&addr)
         .serve(router.into_make_service())
         .await
@@ -122,6 +127,22 @@ async fn all_post() -> Result<impl IntoResponse, StatusCode> {
         })
     }
     Ok(Json(accum))
+}
+
+async fn delete_post(Path(id): Path<i32>) -> StatusCode {
+    let db = connection().await.unwrap();
+    post::Entity::delete_by_id(id)
+        .exec(&db)
+        .await
+        .map(|res| {
+            // todo: もうちょっと良い書き方・・・
+            if res.rows_affected == 1 {
+                StatusCode::NO_CONTENT
+            } else {
+                StatusCode::NOT_FOUND
+            }
+        })
+        .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 pub async fn connection() -> Result<DbConn, DbErr> {
