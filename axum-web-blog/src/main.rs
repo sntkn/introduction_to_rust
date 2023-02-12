@@ -17,7 +17,7 @@ async fn main() {
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     let router = Router::new()
         .route("/", get(hello_world))
-        .route("/posts", post(create_post))
+        .route("/posts", post(create_post).get(all_post))
         .route("/posts/:id", get(find_post));
     axum::Server::bind(&addr)
         .serve(router.into_make_service())
@@ -81,6 +81,20 @@ async fn find_post(Path(id): Path<i32>) -> Result<impl IntoResponse, StatusCode>
         })),
         None => Err(StatusCode::NOT_FOUND),
     }
+}
+
+async fn all_post() -> Result<impl IntoResponse, StatusCode> {
+    let db = connection().await.unwrap();
+    let posts = post::Entity::find().all(&db).await.unwrap();
+    let mut accum: Vec<ResponsePost> = vec![];
+    for p in posts.iter() {
+        accum.push(ResponsePost {
+            id: p.id,
+            title: p.title.to_string(),
+            body: p.body.to_string(),
+        })
+    }
+    Ok(Json(accum))
 }
 
 pub async fn connection() -> Result<DbConn, DbErr> {
