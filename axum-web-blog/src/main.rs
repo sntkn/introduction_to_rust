@@ -7,12 +7,12 @@ use axum::{
     Json, Router,
 };
 use dotenv;
-use entity::post::{self, ActiveModel};
-use sea_orm::{
-    ActiveModelTrait, ActiveValue, Database, DbConn, DbErr, DeleteResult, EntityTrait, Set,
-};
+use entity::post;
+use sea_orm::{ActiveModelTrait, ActiveValue, Database, DbConn, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
+mod repository;
+use crate::repository::{Mutation, Query, UpdatePost};
 
 #[tokio::main]
 async fn main() {
@@ -47,8 +47,9 @@ struct CreatePost {
     title: String,
     body: String,
 }
+
 #[derive(Deserialize)]
-struct UpdatePost {
+struct RequestUpdatePost {
     title: String,
     body: String,
 }
@@ -81,7 +82,7 @@ async fn create_post(
 
 async fn find_post(Path(id): Path<i32>) -> Result<impl IntoResponse, StatusCode> {
     let db = connection().await.unwrap();
-    let post = post::Entity::find_by_id(id).one(&db).await.unwrap();
+    let post = Query::find_post_by_id(&db, id).await.unwrap();
 
     match post {
         Some(post) => Ok(Json(ResponsePost {
@@ -95,18 +96,14 @@ async fn find_post(Path(id): Path<i32>) -> Result<impl IntoResponse, StatusCode>
 
 async fn update_post(
     Path(id): Path<i32>,
-    extract::Json(payload): extract::Json<UpdatePost>,
+    extract::Json(payload): extract::Json<RequestUpdatePost>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let db = connection().await.unwrap();
-    let mut post: ActiveModel = post::Entity::find_by_id(id)
-        .one(&db)
-        .await
-        .unwrap()
-        .unwrap()
-        .into();
-    post.title = Set(payload.title);
-    post.body = Set(payload.body);
-    let post = post.update(&db).await.unwrap();
+    let data = UpdatePost {
+        title: payload.title,
+        body: payload.body,
+    };
+    let post = Mutation::update_post_by_id(&db, id, data).await.unwrap();
 
     Ok(Json(ResponsePost {
         id,
