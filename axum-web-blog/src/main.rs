@@ -7,12 +7,11 @@ use axum::{
     Json, Router,
 };
 use dotenv;
-use entity::post;
-use sea_orm::{ActiveModelTrait, ActiveValue, Database, DbConn, DbErr, EntityTrait};
+use sea_orm::{Database, DbConn, DbErr};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 mod repository;
-use crate::repository::{Mutation, Query, UpdatePost};
+use crate::repository::{CreatePost, Mutation, Query, UpdatePost};
 
 #[tokio::main]
 async fn main() {
@@ -43,7 +42,7 @@ struct HelloWorld {
 }
 
 #[derive(Deserialize)]
-struct CreatePost {
+struct RequestCreatePost {
     title: String,
     body: String,
 }
@@ -62,16 +61,14 @@ struct ResponsePost {
 }
 
 async fn create_post(
-    extract::Json(payload): extract::Json<CreatePost>,
+    extract::Json(payload): extract::Json<RequestCreatePost>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let db = connection().await.unwrap();
-    let post = post::ActiveModel {
-        id: ActiveValue::NotSet,
-        title: ActiveValue::set(payload.title.to_string()),
-        body: ActiveValue::set(payload.body.to_string()),
-        published: ActiveValue::set(false),
+    let data = CreatePost {
+        title: payload.title,
+        body: payload.body,
     };
-    let post = post.insert(&db).await.unwrap(); //or(Err(StatusCode::NOT_FOUND));
+    let post = Mutation::create_post(&db, data).await.unwrap();
 
     Ok(Json(ResponsePost {
         id: post.id,
@@ -114,7 +111,7 @@ async fn update_post(
 
 async fn all_post() -> Result<impl IntoResponse, StatusCode> {
     let db = connection().await.unwrap();
-    let posts = post::Entity::find().all(&db).await.unwrap();
+    let posts = Query::find_all_posts(&db).await.unwrap();
     let mut accum: Vec<ResponsePost> = vec![];
     for p in posts.iter() {
         accum.push(ResponsePost {
@@ -128,8 +125,7 @@ async fn all_post() -> Result<impl IntoResponse, StatusCode> {
 
 async fn delete_post(Path(id): Path<i32>) -> StatusCode {
     let db = connection().await.unwrap();
-    post::Entity::delete_by_id(id)
-        .exec(&db)
+    Mutation::delete_post_by_id(&db, id)
         .await
         .map(|res| {
             // todo: もうちょっと良い書き方・・・
