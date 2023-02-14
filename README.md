@@ -253,3 +253,72 @@ print!("{}", min(&vec![55, 22, 33, 44]));
 - sum
 - min/max
 - collect -> `arr.into_iter().collect::<Vec<i32>>();`
+
+### 基本の型
+
+#### Option
+
+データが存在するか存在しないか。
+
+```rust
+pub enum Option<T> {
+  None,
+  Some(T),
+}
+```
+
+#### Result
+
+処理結果が成功かエラーか。
+
+```rust
+pub enum Result<T, E> {
+  Ok(T),
+  Err(E),
+}
+```
+
+Result 型の処理方法は以下のものがある
+
+- match .... 場合分けして処理する
+- unwrap_or() .... or の値を返す
+- unwrap() .... Err を無視する
+- and_then(f) .... Ok だったら関数 f を実行する
+- ? .... Err の場合は呼び出し元に Err を返却する
+
+#### Vec
+
+要素の増減が可能な配列。
+
+#### Box
+
+ヒープ領域に値を格納する。
+
+- コンパイル時にサイズがわからない型
+- 大きなサイズの方の値を渡すのにポインタで渡す
+- 共通のトレイトを実装したさまざまな型を画一的にポインタで扱う
+
+### Attribute
+
+`#[xxxx]` を記述する
+
+```rust
+
+#[derive(Eq, PartialEq)]
+struct A(i32); // 一致比較 A(0) == A(1)
+
+#[derive(PartialEq, PartialOrd)]
+struct B(f32); // 代償比較 B(0.1) > B(0.2)
+
+#[derive(Copy, Clone)]
+struct C; // コピー, not move, a = c; b = c;
+
+#[derive(Clone)]
+struct D; // クローン d.clone
+
+#[derive(Debug)]
+struct E; // デバッグプリント
+
+#[derive(Default)]
+struct F; // default F::default();
+```
