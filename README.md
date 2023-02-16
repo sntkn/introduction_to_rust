@@ -322,3 +322,13 @@ struct E; // デバッグプリント
 #[derive(Default)]
 struct F; // default F::default();
 ```
+
+### error
+
+便利なエラーハンドリングの crate
+
+#### anyhow
+
+主に自作アプリケーション用途で手軽にエラーハンドリング  
+Result 型をラップして、anyhow::Error を隠蔽する。  
+bail!, ensure! といった早期リターンもできる
