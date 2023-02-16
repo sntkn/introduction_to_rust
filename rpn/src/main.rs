@@ -1,6 +1,7 @@
 use anyhow::{bail, ensure, Context, Result};
 use std::fs::File;
 use std::io::{stdin, BufRead, BufReader};
+use std::path::PathBuf;
 
 use clap::Parser;
 
@@ -15,7 +16,7 @@ struct Opts {
     #[arg(short, long)]
     verbose: bool,
     #[arg(name = "FILE")]
-    formula_file: Option<String>,
+    formula_file: Option<PathBuf>,
 }
 
 struct RpnCalcurator(bool);
