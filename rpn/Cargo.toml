@@ -1,5 +1,5 @@
 [package]
-name = "rpn"
+name = "rpncalc"
 version = "0.1.0"
 edition = "2021"
 
