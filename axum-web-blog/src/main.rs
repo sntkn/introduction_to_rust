@@ -11,7 +11,7 @@ use sea_orm::{Database, DbConn, DbErr};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 mod repository;
-use crate::repository::{CreatePost, Mutation, Query, UpdatePost};
+use crate::repository::{PostCreate, PostMutation, PostQuery, PostUpdate};
 
 #[tokio::main]
 async fn main() {
@@ -64,11 +64,11 @@ async fn create_post(
     extract::Json(payload): extract::Json<RequestCreatePost>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let db = connection().await.unwrap();
-    let data = CreatePost {
+    let data = PostCreate {
         title: payload.title,
         body: payload.body,
     };
-    let post = Mutation::create_post(&db, data).await.unwrap();
+    let post = PostMutation::create_post(&db, data).await.unwrap();
 
     Ok(Json(ResponsePost {
         id: post.id,
@@ -79,7 +79,7 @@ async fn create_post(
 
 async fn find_post(Path(id): Path<i32>) -> Result<impl IntoResponse, StatusCode> {
     let db = connection().await.unwrap();
-    let post = Query::find_post_by_id(&db, id).await.unwrap();
+    let post = PostQuery::find_post_by_id(&db, id).await.unwrap();
 
     match post {
         Some(post) => Ok(Json(ResponsePost {
@@ -96,11 +96,13 @@ async fn update_post(
     extract::Json(payload): extract::Json<RequestUpdatePost>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let db = connection().await.unwrap();
-    let data = UpdatePost {
+    let data = PostUpdate {
         title: payload.title,
         body: payload.body,
     };
-    let post = Mutation::update_post_by_id(&db, id, data).await.unwrap();
+    let post = PostMutation::update_post_by_id(&db, id, data)
+        .await
+        .unwrap();
 
     Ok(Json(ResponsePost {
         id,
@@ -111,7 +113,7 @@ async fn update_post(
 
 async fn all_post() -> Result<impl IntoResponse, StatusCode> {
     let db = connection().await.unwrap();
-    let posts = Query::find_all_posts(&db).await.unwrap();
+    let posts = PostQuery::find_all_posts(&db).await.unwrap();
     let mut accum: Vec<ResponsePost> = vec![];
     for p in posts.iter() {
         accum.push(ResponsePost {
@@ -125,7 +127,7 @@ async fn all_post() -> Result<impl IntoResponse, StatusCode> {
 
 async fn delete_post(Path(id): Path<i32>) -> StatusCode {
     let db = connection().await.unwrap();
-    Mutation::delete_post_by_id(&db, id)
+    PostMutation::delete_post_by_id(&db, id)
         .await
         .map(|res| {
             // todo: もうちょっと良い書き方・・・
