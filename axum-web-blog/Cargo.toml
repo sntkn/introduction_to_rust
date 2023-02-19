@@ -14,5 +14,5 @@ entity = { path = "./entity" }
 
 [dependencies.sea-orm]
 version = "^0.11"
-features = [ "sqlx-sqlite", "runtime-tokio-rustls", "macros" ]
+features = [ "sqlx-sqlite", "runtime-tokio-rustls", "macros", "mock" ]
 default-features = false
