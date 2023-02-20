@@ -335,9 +335,18 @@ bail!, ensure! といった早期リターンもできる
 
 ## cargo generate
 
-テンプレートリポジトリからプロジェクトを始める
+テンプレートリポジトリからプロジェクトを始める  
+以下は wasm プロジェクトの始めかた
 
 ```bash
 cargo install cargo-generate
 cargo generate --git https://github.com/rustwasm/wasm-pack-template
+
+curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+cd project
+wasm-pack build
+npm init wasm-app www
+cd www
+npm install
+npm run start
 ```
