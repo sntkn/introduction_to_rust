@@ -2,6 +2,8 @@ mod logic;
 mod utils;
 
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::{Clamped, JsCast};
+use web_sys::ImageData;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
