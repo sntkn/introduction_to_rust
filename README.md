@@ -350,3 +350,10 @@ cd www
 npm install
 npm run start
 ```
+
+## wasm
+
+### wasm-bindgen
+
+JavaScript と Rust のバインディングを行うクレート。  
+js-sys, web-sys もその一部。
