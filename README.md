@@ -357,3 +357,31 @@ npm run start
 
 JavaScript と Rust のバインディングを行うクレート。  
 js-sys, web-sys もその一部。
+
+## macro
+
+### 宣言的マクロ
+
+```rust
+macro_rules! vec {
+  ($ ($x:expr),*) => { // $(),* は繰り返しの意味
+    {
+      let mut temp_vec = Vec::new();
+      $(
+        temp_vec.push($x);
+      )*
+      temp_vec
+    }
+  }
+}
+```
+
+### 関数的マクロ
+
+```rust
+tomlstruct! {
+  [Hello]
+  name = "hello"
+  version = 1.0
+}
+```
