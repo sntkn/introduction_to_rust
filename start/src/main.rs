@@ -1,3 +1,5 @@
+mod module_hello;
+
 fn main() {
     func_ex_print_some(func_ex_div_some(10, 5));
     func_ex_print_some(func_ex_div_some(10, 0));
@@ -5,6 +7,7 @@ fn main() {
     func_ex_print_some_match(func_ex_div_some(10, 0));
     func_ex_print_result(func_ex_div_result(10, 5));
     func_ex_print_result(func_ex_div_result(10, 0));
+    crate::module_hello::print_hello();
 }
 
 fn func_ex_div_some(x: i32, y: i32) -> Option<i32> {

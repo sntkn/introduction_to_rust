@@ -2,6 +2,14 @@
 
 Rust 入門
 
+## Environments
+
+VS Code
+
+- rust-analyzer
+- CodeLLDB
+- cmd + shift + p -> reload window
+
 ## Instration
 
 ```bash
