@@ -16,6 +16,19 @@ fn main() {
     let s_ref1 = &mut s;
     //let s_ref2 = &mut s; // mutable more than once at a time
     myclear(s_ref1);
+
+    let taro = Person::new(String::from("taro"), 10);
+    println!("{}({})", taro.name, taro.age_incr(5));
+
+    let mut v: Vec<EnumExample> = vec![];
+    v.push(EnumExample::StructPerson {
+        name: String::from("struct taro"),
+    });
+    for e in &v {
+        if let EnumExample::StructPerson { name } = e {
+            println!("{}", name) // match でも取り出せる
+        }
+    }
 }
 
 fn _pick(x: &[i32], end: usize) -> &[i32] {
@@ -75,4 +88,45 @@ fn func_ex_print_result<T: std::fmt::Display, E: std::fmt::Display>(ans: Result<
         Ok(res) => println!("{}", res),
         Err(str) => println!("{}", str),
     }
+}
+
+#[derive(Debug)]
+struct Person {
+    name: String,
+    age: u8,
+}
+
+impl Person {
+    fn new(name: String, age: u8) -> Person {
+        Person { name, age }
+    }
+
+    fn age_incr(&self, incr: u8) -> u8 {
+        self.age + incr
+    }
+
+    // 書き換える場合は &mut self にする
+    fn _age_incr_replace(&mut self, incr: u8) {
+        self.age += incr;
+    }
+}
+
+#[derive(Debug)]
+struct Parents<'a, 'b> {
+    // 複数の構造体を参照で紐付けたい場合はやっぱりラベル付けが必要
+    father: &'a Person,
+    mother: &'b Person,
+}
+
+// impl と Parents, 引数、戻り値に全てライフタイプパラメータをつける
+impl<'a, 'b> Parents<'a, 'b> {
+    fn new(father: &'a Person, mother: &'b Person) -> Parents<'a, 'b> {
+        Parents { father, mother }
+    }
+}
+
+enum EnumExample {
+    StructPerson { name: String }, // enum に構造体を持たせることもできる
+    StructParents { name: String },
+    // Parents, // 定義済みのstructを設定するのは無理か
 }

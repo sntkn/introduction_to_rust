@@ -270,6 +270,14 @@ print!("{}", min(&vec![55, 22, 33, 44]));
 
 ### 基本の型
 
+#### Primitive
+
+```rust
+let x: i64 = 1;
+let x = 1_i64; // _型 でその型で指定できる
+// 20 / 7 = 2 // あまりは切り捨てられる
+```
+
 #### Option
 
 データが存在するか存在しないか。
@@ -279,6 +287,33 @@ pub enum Option<T> {
   None,
   Some(T),
 }
+
+// 取り出し
+let y = xxx; // Option<T>
+
+// if let
+if let Some(x) = y {
+  println("{}", x);
+} else {
+  println!("None");
+}
+
+// match
+match y {
+  Some(x) => println("{}", x);
+  None -> println!("None");
+}
+
+// unwrap -> None で panic
+y.unwrap();
+
+// expect -> panic でメッセージ
+y.expect("error message");
+
+// unwrap_or -> None で引数指定
+y.unwrap_or("None");
+
+// is_some, is_none
 ```
 
 #### Result
