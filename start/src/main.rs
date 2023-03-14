@@ -1,3 +1,8 @@
+use std::{
+    cell::RefCell,
+    rc::{Rc, Weak},
+};
+
 mod module_hello;
 
 fn main() {
@@ -29,6 +34,18 @@ fn main() {
             println!("{}", name) // match でも取り出せる
         }
     }
+
+    let node1 = Rc::new(RefCell::new(Node {
+        data: 1,
+        child: None,
+    }));
+    let node2 = Rc::new(RefCell::new(Node {
+        data: 2,
+        child: None,
+    }));
+    node1.borrow_mut().child = Some(Rc::downgrade(&node2)); //Rc::downgrade()は弱結合化。Rc::clone()は強結合
+    node2.borrow_mut().child = Some(Rc::downgrade(&node2));
+    // Weak::upgrade() は強結合化
 }
 
 fn _pick(x: &[i32], end: usize) -> &[i32] {
@@ -129,4 +146,10 @@ enum EnumExample {
     StructPerson { name: String }, // enum に構造体を持たせることもできる
     StructParents { name: String },
     // Parents, // 定義済みのstructを設定するのは無理か
+}
+
+#[allow(dead_code)]
+struct Node {
+    data: i32,
+    child: Option<Weak<RefCell<Node>>>,
 }

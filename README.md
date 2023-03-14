@@ -335,6 +335,13 @@ Result 型の処理方法は以下のものがある
 - and_then(f) .... Ok だったら関数 f を実行する
 - ? .... Err の場合は呼び出し元に Err を返却する
 
+E 型が異なることがあるが大体 `std::error::Error` トレイトを実装している。
+
+| function     | E                       |
+| ------------ | ----------------------- |
+| File::open() | std::io::Error          |
+| parse()      | \<i32 as FormStr\>::Err |
+
 #### Vec
 
 要素の増減が可能な配列。
@@ -346,6 +353,49 @@ Result 型の処理方法は以下のものがある
 - コンパイル時にサイズがわからない型
 - 大きなサイズの方の値を渡すのにポインタで渡す
 - 共通のトレイトを実装したさまざまな型を画一的にポインタで扱う
+
+再帰などもサイズがわからないから Box 型を使う
+
+```rust
+enum RecursiveEnum {
+  Val(Box<RecursiveEnum>)
+  Null
+}
+
+fn main() {
+  let x = Val(Box::new(Val(Box::new(Null))));
+}
+```
+
+#### HashMap
+
+`HashMap<K,V>` は Python の辞書型みたいなやつ
+
+```rust
+let mut captals = HashMap::new();
+capitals.insert("Japan", "Tokyo");
+// 取得
+capiitals.get("Japan"); // Option
+```
+
+#### Rc, RefCell, Weak
+
+`Rc<T>` はリファレンスカウントポインタで Box とほぼ同じ動き。  
+違いは clone した時にコピーを作らないで参照する。  
+内部でカウントしていて全部利用されなくなったらデータ解放。
+
+`RefCell<T>` Rc のミュータブル版  
+`Weak<T>` は循環参照によるメモリリークを回避する（弱結合）  
+弱結合は強結合がなくなると強制的にお亡くなりになる。
+
+#### const, static
+
+| const          | static         |
+| -------------- | -------------- |
+| メモリにない   | メモリ上にある |
+| &使えない      | &使える        |
+| 型推論されない | 型推論されない |
+| 大文字で定義   | 大文字で定義   |
 
 ### Attribute
 
