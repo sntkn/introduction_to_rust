@@ -225,6 +225,41 @@ enum Result<T, E> {
 }
 // utility fn
 x.is_ok(), x.is_err(), x.unwrap(),
+
+
+// Genericsの定義
+struct GenEx<T> {
+  value: T
+}
+
+impl<T> GenEx<T> {
+  fn return_value(self) -> T {
+    self.value
+  }
+}
+
+// let x = GenEx{value: 1};
+// x.return_value() -> 1
+```
+
+### trait
+
+```rust
+trait CalcArea {
+  fn calc_area(&self) -> f64;
+}
+
+struct Rectangle {
+  width: f64,
+  height: f64,
+}
+
+impl CalcArea for Rectangle {
+  fn calc_area(&self) -> f64 {
+    self.width * self.height
+  }
+}
+
 ```
 
 ### slice

@@ -46,6 +46,18 @@ fn main() {
     node1.borrow_mut().child = Some(Rc::downgrade(&node2)); //Rc::downgrade()は弱結合化。Rc::clone()は強結合
     node2.borrow_mut().child = Some(Rc::downgrade(&node2));
     // Weak::upgrade() は強結合化
+
+    let rect = Rectangle {
+        width: 1.0,
+        height: 2.0,
+    };
+    println!("rec area={}", area(&rect));
+
+    let tria = RightTrianble {
+        width: 1.0,
+        height: 2.0,
+    };
+    println!("tria area={}", area2(&tria));
 }
 
 fn _pick(x: &[i32], end: usize) -> &[i32] {
@@ -152,4 +164,60 @@ enum EnumExample {
 struct Node {
     data: i32,
     child: Option<Weak<RefCell<Node>>>,
+}
+
+trait CalcArea {
+    fn calc_area(&self) -> f64;
+}
+
+struct Rectangle {
+    width: f64,
+    height: f64,
+}
+
+impl CalcArea for Rectangle {
+    fn calc_area(&self) -> f64 {
+        self.width * self.height
+    }
+}
+
+struct RightTrianble {
+    width: f64,
+    height: f64,
+}
+
+impl CalcArea for RightTrianble {
+    fn calc_area(&self) -> f64 {
+        self.width * self.height * 0.5
+    }
+}
+
+// T型のトレイト境界の条件をつける
+// 複数の場合は＜T： A + B + C> など
+fn area<T: CalcArea>(x: &T) -> f64 {
+    x.calc_area()
+}
+
+// 上記を where で書くこともできる
+fn area2<T>(x: &T) -> f64
+where
+    T: CalcArea,
+{
+    x.calc_area()
+}
+
+// インターフェース的な定義だけでなく実装も書ける
+trait PrintHello {
+    fn print_hello(&self) {
+        println!("hello"); // トレイトに実装
+    }
+}
+
+struct Test;
+
+impl PrintHello for Test {
+    fn print_hello(&self) {
+        // 上書きする場合は引数返却を合わせる
+        println!("hello world"); // メソッド上書き
+    }
 }
