@@ -262,6 +262,8 @@ impl CalcArea for Rectangle {
 
 ```
 
+既存のトレイトを上書きもできる
+
 ### slice
 
 slice 参照を使えばどんな配列でも処理できる
