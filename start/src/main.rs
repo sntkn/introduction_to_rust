@@ -1,5 +1,8 @@
 use std::{
     cell::RefCell,
+    convert::{TryFrom, TryInto},
+    fmt::Debug,
+    ops::Neg,
     rc::{Rc, Weak},
 };
 
@@ -58,6 +61,9 @@ fn main() {
         height: 2.0,
     };
     println!("tria area={}", area2(&tria));
+
+    println!("{}", 1.iabs());
+    println!("{}", (-1).iabs());
 }
 
 fn _pick(x: &[i32], end: usize) -> &[i32] {
@@ -220,4 +226,76 @@ impl PrintHello for Test {
         // 上書きする場合は引数返却を合わせる
         println!("hello world"); // メソッド上書き
     }
+}
+
+// trait IAbs<T, S> {
+//     fn iabs(self) -> S;
+// }
+//
+// impl IAbs<i32, u32> for i32 {
+//     fn iabs(self) -> u32 {
+//         if self >= 0 {
+//             self as u32
+//         } else {
+//             -self as u32
+//         }
+//     }
+// }
+
+// 上記の実装でも動くが、本体の方から従属的に決まる型Sをジェネリックパラメータで指定するのは不自然なので
+// 下記のように関連型（associated type）を使うとスマート
+// <型 as トレイト>::関連型
+
+//trait IAbs {
+//    type Output;
+//    fn iabs(self) -> <Self as IAbs>::Output;
+//}
+//
+//impl IAbs for i32 {
+//    type Output = u32;
+//    fn iabs(self) -> <Self as IAbs>::Output {
+//        if self >= 0 {
+//            self as <Self as IAbs>::Output
+//        } else {
+//            (-self) as <Self as IAbs>::Output
+//        }
+//    }
+//}
+
+// さらにさまざまなタイプに対応させるには、トレイト境界をたくさんつける
+// Sized 値のサイズが決まっている
+// PartialOrd 大小比較
+// From i8 からの変換
+// Into, TryInto 型の変換
+trait IAbs {
+    type Output;
+    fn iabs(self) -> <Self as IAbs>::Output
+    where
+        Self: Sized + PartialOrd + Neg + From<i8> + TryInto<<Self as IAbs>::Output>,
+        <Self as IAbs>::Output: TryFrom<<Self as Neg>::Output>,
+        <Self as TryInto<<Self as IAbs>::Output>>::Error: Debug,
+        <<Self as IAbs>::Output as TryFrom<<Self as Neg>::Output>>::Error: Debug,
+    {
+        if self >= (0_i8).into() {
+            self.try_into().unwrap()
+        } else {
+            (-self).try_into().unwrap()
+        }
+    }
+}
+
+impl IAbs for i32 {
+    type Output = u32;
+}
+
+impl IAbs for i8 {
+    type Output = u8;
+}
+
+impl IAbs for i16 {
+    type Output = u16;
+}
+
+impl IAbs for i64 {
+    type Output = u64;
 }
